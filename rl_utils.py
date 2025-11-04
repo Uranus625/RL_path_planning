@@ -33,9 +33,15 @@ def state_to_vector(state_dict):
     # 组合特征
     features = normalized_pos + normalized_distance + normalized_direction
     
+    # 周围2格的扩展障碍物（4个方向×2格=8个值）[左1,左2,右1,右2,上1,上2,下1,下2]
+    extended_obstacles = state_dict.get('extended_obstacles', [0] * 8)  
+    features += extended_obstacles
+
+    '''
     # 周围障碍物 [左,右,上,下]
     surrounding_obstacles = state_dict.get('surrounding_obstacles', [0, 0, 0, 0])
     features += surrounding_obstacles
+    '''
     
     # 上一步动作 [-1表示无历史]
     last_action = [state_dict.get('last_action', -1)]

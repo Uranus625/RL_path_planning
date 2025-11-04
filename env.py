@@ -170,14 +170,86 @@ class MixedObstacleEnv:
                 obstacles.append(0)
         
         return obstacles
+    
+    def _get_extended_obstacles(self, pos: Tuple[int, int], radius: int = 2) -> List[int]:
+        """
+        获取agent周围扩展范围内的障碍物信息（四个方向的射线检测）
+        
+        参数:
+            pos: agent当前位置
+            radius: 感知半径（默认2格）
+            
+        返回:
+            列表，包含四个方向上radius格范围内的障碍物信息
+            每个方向返回radius个值：[左1,左2,..., 右1,右2,..., 上1,上2,..., 下1,下2,...]
+            例如radius=2时返回8个值：[左1,左2, 右1,右2, 上1,上2, 下1,下2]
+            0表示可通行，1表示有障碍物或出界
+        """
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # 左、右、上、下
+        obstacles = []
+        
+        for dx, dy in directions:
+            # 对每个方向，检测从1到radius格的距离
+            for distance in range(1, radius + 1):
+                check_pos = (pos[0] + dx * distance, pos[1] + dy * distance)
+                if self._is_out_of_bounds(check_pos) or self._is_collision(check_pos):
+                    obstacles.append(1)
+                else:
+                    obstacles.append(0)
+        
+        return obstacles
+    
+    def _get_square_obstacles(self, pos: Tuple[int, int], radius: int = 1) -> List[int]:
+        """
+        获取agent周围方形区域内的障碍物分布（真正的NxN区域）
+        
+        参数:
+            pos: agent当前位置
+            radius: 方形区域半径（radius=1表示3x3区域，radius=2表示5x5区域）
+            
+        返回:
+            列表，包含周围方形区域的障碍物信息（不包括agent自己所在位置）
+            按行扫描顺序返回：从上到下，从左到右
+            
+        示例：radius=1时（3x3区域，返回8个值）
+            □ □ □
+            □ A □  → [左上, 上, 右上, 左, 右, 左下, 下, 右下]
+            □ □ □
+            
+        示例：radius=2时（5x5区域，返回24个值）
+            □ □ □ □ □
+            □ □ □ □ □
+            □ □ A □ □
+            □ □ □ □ □
+            □ □ □ □ □
+        """
+        obstacles = []
+        
+        # 扫描以pos为中心的(2*radius+1) x (2*radius+1)方形区域
+        for dy in range(-radius, radius + 1):
+            for dx in range(-radius, radius + 1):
+                # 跳过agent自己的位置
+                if dx == 0 and dy == 0:
+                    continue
+                
+                check_pos = (pos[0] + dx, pos[1] + dy)
+                if self._is_out_of_bounds(check_pos) or self._is_collision(check_pos):
+                    obstacles.append(1)
+                else:
+                    obstacles.append(0)
+        
+        return obstacles
 
     def _get_state(self) -> Dict:
         # 计算到目标的相对位置
         dx = self.target_pos[0] - self.agent_pos[0]
         dy = self.target_pos[1] - self.agent_pos[1]
         
-        # 获取周围障碍物信息
+        # 获取周围障碍物信息（近距离：1格）
         surrounding_obstacles = self._get_surrounding_obstacles(self.agent_pos)
+        
+        # 获取扩展范围障碍物信息（远距离：2格范围）
+        extended_obstacles = self._get_extended_obstacles(self.agent_pos, radius=2)
         
         # 归一化坐标（0-1范围）
         normalized_agent_x = self.agent_pos[0] / self.grid_width
@@ -192,7 +264,8 @@ class MixedObstacleEnv:
             'normalized_agent_pos': (normalized_agent_x, normalized_agent_y),
             'normalized_distance': self._manhattan_distance(self.agent_pos, self.target_pos) / max_distance,
             'normalized_target_direction': (normalized_dx, normalized_dy),
-            'surrounding_obstacles': surrounding_obstacles,  # 周围四个方向的障碍物信息
+            # 'surrounding_obstacles': surrounding_obstacles,  # 周围1格的障碍物 [左,右,上,下] 共4个
+            'extended_obstacles': extended_obstacles,  # 周围2格的障碍物 [左1,左2,右1,右2,上1,上2,下1,下2] 共8个
             'last_action': self.last_action  # 上一步的动作
         }
 
@@ -319,7 +392,7 @@ class MixedObstacleEnv:
             # 强化惩罚反向移动（回到刚离开的位置）
             opposite_actions = {0: 1, 1: 0, 2: 3, 3: 2}  # 左<->右, 上<->下
             if self.last_action != -1 and action == opposite_actions[self.last_action]:
-                reward -= 8.0  # 加大惩罚，使反复横跳总体为负
+                reward -= 11.0  # 加大惩罚，使反复横跳总体为负
             
             # 更新距离记录
             self.previous_distance = current_distance
