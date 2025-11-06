@@ -83,15 +83,16 @@ class DQNTrainer:
             epsilon = max(epsilon_end, epsilon * epsilon_decay)
             self.agent.epsilon = epsilon
             
-            # 计算平均奖励
-            if len(self.return_list) >= 100:
-                avg_reward = np.mean(self.return_list[-100:])
-            else:
-                avg_reward = np.mean(self.return_list)
+            # # 计算平均奖励
+            # if len(self.return_list) >= 100:
+            #     avg_reward = np.mean(self.return_list[-100:])
+            # else:
+            #     avg_reward = np.mean(self.return_list)
             
             # 打印进度
             if verbose and (episode + 1) % 50 == 0:
-                avg_return = np.mean(self.return_list[-50:])
+                # 安全地计算平均值，避免空切片警告
+                avg_return = np.mean(self.return_list[-50:]) if len(self.return_list) >= 50 else np.mean(self.return_list) if self.return_list else 0.0
                 print(f'Episode [{episode+1:4d}/{num_episodes}] - '
                       f'Avg Return: {avg_return:7.2f}, Epsilon: {epsilon:.3f}')
             
@@ -106,10 +107,14 @@ class DQNTrainer:
     
     def save_final_model(self):
         """保存最终模型"""
-        final_model_path = self.config.get('final_model_path', './saved_models/final_model.pt')
-        final_avg_reward = (np.mean(self.return_list[-100:]) 
-                           if len(self.return_list) >= 100 
-                           else np.mean(self.return_list))
+        final_model_path = self.config.get('dqn_model_path', './saved_models/final_model.pt')
+        # 安全地计算最终平均奖励
+        if len(self.return_list) >= 100:
+            final_avg_reward = np.mean(self.return_list[-100:])
+        elif self.return_list:
+            final_avg_reward = np.mean(self.return_list)
+        else:
+            final_avg_reward = 0.0
         self.agent.save_model(final_model_path, len(self.return_list), final_avg_reward)
         
         print("\n" + "="*60)

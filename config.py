@@ -22,27 +22,33 @@ def get_config():
         
         # 训练参数
         'training': {
-            'num_episodes': 4000,
+            'num_episodes': 20000,
             'learning_rate': 2e-3,
             'gamma': 0.95,
-            'epsilon_start': 0.9,
-            'epsilon_end': 0.3,
-            'epsilon_decay': 0.9998,
+            'epsilon_start': 0.95,
+            'epsilon_end': 0.2,
+            'epsilon_decay': 0.9999,
             'target_update': 10,
             'batch_size': 64,
+            'epochs': 10,
+            'actor_lr': 1e-3,
+            'critic_lr': 1e-2,
+            'lmbda': 0.95,
+            'eps': 0.2,
         },
         
         # 经验回放参数
         'replay_buffer': {
             'buffer_size': 10000,
-            'minimal_size': 1000,
+            'minimal_size': 2000,
         },
         
         # 保存和日志参数
         'logging': {
             'tensorboard_log_dir': './tensorboard_log',
             'checkpoint_dir': './saved_models/checkpoints',
-            'final_model_path': './saved_models/dqn_model.pt',
+            'dqn_model_path': './saved_models/dqn_model.pt',
+            'ppo_model_path': './saved_models/ppo_model.pt',
             'save_interval': 500,  # 每多少个episode保存一次检查点
         },
         

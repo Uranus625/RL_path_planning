@@ -129,8 +129,10 @@ class DQNAgent:
             self.episode_rewards.append(episode_reward)
             if len(self.episode_rewards) > 100:
                 self.episode_rewards.pop(0)
-            avg_reward = np.mean(self.episode_rewards)
-            self.writer.add_scalar('Episode/Average_Reward_100', avg_reward, episode)
+            # 安全地计算平均值
+            if self.episode_rewards:
+                avg_reward = np.mean(self.episode_rewards)
+                self.writer.add_scalar('Episode/Average_Reward_100', avg_reward, episode)
 
     def save_model(self, filepath, episode=None, avg_reward=None):
         os.makedirs(os.path.dirname(filepath), exist_ok=True)

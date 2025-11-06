@@ -368,6 +368,7 @@ class MixedObstacleEnv:
 
 ### TODO：完成step方法（奖励函数）
     def step(self, action: int) -> Tuple[Dict, float, bool, Dict]:
+        done = False
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]  # 左、右、上、下
         dx, dy = directions[action]
 
@@ -378,7 +379,7 @@ class MixedObstacleEnv:
         collision = self._is_collision(new_pos)
         out_of_bounds = self._is_out_of_bounds(new_pos)
 
-        reward = -1.0  # 每运动一步存在基础惩罚
+        reward = -0.8  # 每运动一步存在基础惩罚
 
         if not collision and not out_of_bounds:
             old_pos = self.agent_pos
@@ -399,16 +400,15 @@ class MixedObstacleEnv:
             
             # 记录当前动作（在成功移动后）
             self.last_action = action
+
+            if self.agent_pos == self.target_pos:
+                reward += 100.0  # 到达目标的奖励
+                done = True
         else:
             reward -= 25.0  # 碰撞或出界的惩罚
-            # 碰撞时不更新last_action，因为动作失败了
-
-        # 检查是否到达目标
-        done = False
-        if self.agent_pos == self.target_pos:
-            reward += 100.0  # 到达目标的奖励
             done = True
-
+            # 碰撞时不更新last_action，因为动作失败了
+            self.last_action = -1
         self._move_moving_obstacles()
 
         state = self._get_state()

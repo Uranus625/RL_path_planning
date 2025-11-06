@@ -3,6 +3,7 @@ import numpy as np
 import time
 import env
 from dqn import DQNAgent
+from ppo import PPOAgent
 from rl_utils import state_to_vector
 from config import get_config
 
@@ -37,16 +38,29 @@ def test_trained_model(model_path, num_test_episodes=5, render=True, render_dela
     
     # 创建智能体（测试时epsilon=0，完全利用）
     device = torch.device(config['device'])
-    agent = DQNAgent(
+    agent = PPOAgent(
         state_dim=state_dim,
         hidden_dim=config['network']['hidden_dim'],
         action_dim=action_dim,
-        learning_rate=config['training']['learning_rate'],
+        actor_lr=config['training']['actor_lr'],
+        critic_lr=config['training']['critic_lr'],
+        lmbda=config['training']['lmbda'],
+        eps=config['training']['eps'],
+        epochs=config['training']['epochs'],
         gamma=config['training']['gamma'],
-        epsilon=0.0,  # 测试时不探索
-        target_update=config['training']['target_update'],
-        device=device
+        device=device,
+        tensorboard_log_dir=config['logging']['tensorboard_log_dir'],
     )
+    # agent = DQNAgent(
+    #     state_dim=state_dim,
+    #     hidden_dim=config['network']['hidden_dim'],
+    #     action_dim=action_dim,
+    #     learning_rate=config['training']['learning_rate'],
+    #     gamma=config['training']['gamma'],
+    #     epsilon=0.0,  # 测试时不探索
+    #     target_update=config['training']['target_update'],
+    #     device=device
+    # )
     
     # 加载模型
     try:
@@ -141,5 +155,5 @@ def test_trained_model(model_path, num_test_episodes=5, render=True, render_dela
 
 
 if __name__ == "__main__":
-    model_path = "./saved_models/dqn_model.pt"
-    test_trained_model(model_path, num_test_episodes=10, render=True)
+    model_path = "./saved_models/ppo_model.pt"
+    test_trained_model(model_path, num_test_episodes=15, render=True)
